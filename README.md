@@ -1,61 +1,51 @@
+🛡️ FortiGate NGFW: Network Segmentation & Web Filtering
 
+   1. Objective
+      
+This project demonstrates the implementation of a FortiGate Next-Generation Firewall (NGFW) in a virtualized environment to manage and segment traffic between an internal network (LAN) and the external network (WAN/Internet). The primary focus was establishing granular Application Layer control and ensuring full traffic visibility through advanced network diagnostic tools.
 
-1. Objetivo
-   
-   O objetivo deste projeto foi implementar um Laboratório de Borda (Edge) utilizando um firewall FortiGate para gerenciar o tráfego de uma rede interna (LAN) em direção à internet (WAN). O foco principal foi garantir que 100% do tráfego fosse inspecionado, eliminando "vazamentos" de rede e aplicando políticas de conformidade através de filtragem de conteúdo.
+   3. Lab Topology & Architecture
+      
+The infrastructure was segmented via VMware to simulate a real-world corporate environment:
+WAN Interface (Port1): Outbound gateway configured via DHCP to receive the external link.
+LAN Interface (Port2): Internal network gateway (10.0.1.254/24), acting as the mandatory inspection point.
+Endpoints: Windows and Ubuntu stations with static addressing, forcing all data flow through the firewall.
 
-2. Environment
+   5. Implementation Phases
+1. Traffic Governance & Routing
+A critical challenge solved was involuntary Split Tunneling. In hybrid environments (Physical + Virtual), the OS tends to prioritize physical interfaces (Wi-Fi) over virtual ones.
 
-   A estrutura foi montada em ambiente virtualizado (VMware Player/Workstation), segmentando as interfaces da seguinte forma:
+Action: Strategic readjustment of interface metrics (Metric 10 for VMnet) and implementation of manual static routes via CMD (route add) to ensure 100% of test traffic was intercepted by the FortiGate.
 
-  Interface WAN (Port1): Configurada via DHCP para receber o link da operadora (VIVO).
-  Interface LAN (Port2): Definida como Gateway da rede interna (10.0.1.254/24).
-  Endpoints de Teste: Máquinas Windows e Ubuntu configuradas com IP estático e apontando para o FortiGate como saída padrão.
+2. Firewall Policies (Security Policies)
+Unlike home routers, FortiGate operates under the Zero Trust principle (Implicit Deny).
 
-3. Analysis
+Configuration: Created the Internet_Access policy mapping the LAN (Port2) -> WAN (Port1) flow.
 
-   A Falha de Direcionamento: Inicialmente, a regra de firewall estava configurada como WAN -> WAN. Isso resultava em "navegação fantasma" (o PC navegava pelo Wi-Fi físico, não pelo firewall). A correção para LAN -> WAN foi o que permitiu a inspeção real.
-Visibilidade via CLI: Utilizamos o comando diag sniffer packet port2 'none' 4 para validar o TCP Three-Way Handshake. Ver as flags SYN, SYN-ACK e ACK confirmou que o FortiGate estava processando o tráfego bidirecionalmente.
+NAT (Network Address Translation): Enabled to allow internal hosts to communicate with the internet under a single public IP.
 
-4. Data collection
+   3. Web Filtering & SSL Inspection (Layer 7)
+Implementation of filtering based on FortiGuard categories.
 
-Implementação de Web Filtering (Segurança de Conteúdo)
-  Implementamos uma camada de segurança de aplicação (Camada 7) para controle de navegação.
-  Perfil utilizado: Perfil Default customizado.
-  Categoria Bloqueada: Social Networking (Redes Sociais).
-  Inspeção SSL: Configurada como Certificate Inspection para identificar o SNI dos pacotes HTTPS.
+Security: Blocked the Social Networking category for corporate compliance.
 
-<img width="936" height="621" alt="image" src="https://github.com/user-attachments/assets/8ce3b51e-92d4-476b-8832-419a5abb6b56" />
+Inspection: Utilized Certificate Inspection mode to analyze SNI headers in HTTPS packets, allowing for precise domain blocking even in encrypted traffic.
 
-5. Conclusion
+ 4. Critical Analysis & Technical Diagnostics
+As an analyst, validation was not limited to the Graphical User Interface (GUI). CLI-based diagnostic methods were used to ensure flow integrity:
 
+Handshake Validation: Executed the diag sniffer packet port2 'none' 4 command to visualize the TCP Three-Way Handshake (SYN, SYN-ACK, ACK).
 
-<img width="1485" height="264" alt="image" src="https://github.com/user-attachments/assets/299f2949-fc15-454a-b5b7-ca0fa39a9c95" />
+Interface Troubleshooting: Identified and corrected a logic error in the firewall rule (initially set as WAN -> WAN), redirecting it to LAN -> WAN to enable edge inspection.
 
+   5.Validation Evidences
 
-<img width="736" height="686" alt="image" src="https://github.com/user-attachments/assets/211f91d7-0be9-4d1d-8a50-090483497405" />
+Traffic Monitor: CLI console print showing internal host packets traversing the firewall.
+<img width="1486" height="288" alt="image" src="https://github.com/user-attachments/assets/58e47082-c688-452f-9f99-91b7891077f5" />
 
+Log Dashboard: Print from the Log & Report > Web Filter menu showing denied access attempts.
+<img width="736" height="365" alt="image" src="https://github.com/user-attachments/assets/ccc2fec6-f5d6-4905-a547-be701c76ffe2" />
 
+Endpoint View: Browser print on Ubuntu/Windows displaying the Fortinet Replacement Message (Block Page).
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<img width="775" height="237" alt="image" src="https://github.com/user-attachments/assets/31f9dece-55ab-4238-8491-2ca6b6396061" />
-
-
-
+<img width="1107" height="773" alt="image" src="https://github.com/user-attachments/assets/a7893025-1e3d-42f2-8d4e-a2c582512964" />
